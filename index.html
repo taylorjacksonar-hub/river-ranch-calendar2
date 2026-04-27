@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>River Ranch Resort — Content Calendar</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f4f0; min-height: 100vh; color: #1a1a1a; }
+  .app { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 1.25rem; border-bottom: 1px solid #e0ddd6; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: #2E7D5E; flex-shrink: 0; }
+  .brand-name { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+  .brand-sub { font-size: 12px; color: #888; }
+  .nav { display: flex; align-items: center; gap: 8px; }
+  .nav button { font-size: 14px; padding: 5px 12px; cursor: pointer; border: 1px solid #ddd; background: #fff; border-radius: 8px; color: #1a1a1a; }
+  .nav button:hover { background: #f0f0f0; }
+  .month-label { font-size: 14px; font-weight: 600; color: #1a1a1a; min-width: 130px; text-align: center; }
+  .controls { display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-pill { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid #ddd; background: #fff; color: #888; cursor: pointer; transition: all 0.15s; }
+  .filter-pill.active-ig { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+  .filter-pill.active-fb { background: #dcfce7; color: #15803d; border-color: #86efac; }
+  .filter-pill.active-both { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+  .filter-pill.active-all { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .add-btn { margin-left: auto; font-size: 13px; padding: 7px 16px; cursor: pointer; background: #2E7D5E; color: #fff; border: none; border-radius: 8px; font-weight: 600; }
+  .add-btn:hover { background: #245f49; }
+  .grid-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 3px; }
+  .day-label { font-size: 11px; color: #aaa; text-align: center; padding: 4px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-cell { min-height: 88px; background: #fff; border: 1px solid #e8e5de; border-radius: 8px; padding: 6px; cursor: pointer; transition: border-color 0.15s; }
+  .cal-cell:hover { border-color: #aaa; }
+  .cal-cell.other-month { background: #fafaf8; opacity: 0.45; pointer-events: none; }
+  .cal-cell.today { border-color: #2E7D5E; border-width: 2px; }
+  .date-num { font-size: 12px; color: #aaa; margin-bottom: 4px; font-weight: 600; }
+  .cal-cell.today .date-num { color: #2E7D5E; }
+  .post-chip { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+  .post-chip.ig { background: #dbeafe; color: #1d4ed8; }
+  .post-chip.fb { background: #dcfce7; color: #15803d; }
+  .post-chip.both { background: #fef3c7; color: #92400e; }
+  .more-chip { font-size: 10px; color: #aaa; padding: 1px 4px; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+  .modal { background: #fff; border-radius: 12px; border: 1px solid #e0ddd6; padding: 1.5rem; width: 400px; max-width: 100%; }
+  .modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; color: #1a1a1a; }
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 12px; color: #888; display: block; margin-bottom: 4px; font-weight: 500; }
+  .field input, .field select, .field textarea { width: 100%; font-size: 13px; padding: 8px 10px; border: 1px solid #e0ddd6; border-radius: 8px; background: #fafaf8; color: #1a1a1a; font-family: inherit; outline: none; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: #2E7D5E; }
+  .field textarea { height: 80px; resize: vertical; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; align-items: center; }
+  .modal-actions button { font-size: 13px; padding: 7px 16px; cursor: pointer; border-radius: 8px; border: 1px solid #e0ddd6; background: #fff; color: #1a1a1a; font-family: inherit; }
+  .modal-actions button:hover { background: #f5f4f0; }
+  .delete-btn { color: #dc2626 !important; border-color: #fca5a5 !important; margin-right: auto; }
+  .save-btn { background: #2E7D5E !important; color: #fff !important; border: none !important; font-weight: 600; }
+  .save-btn:hover { background: #245f49 !important; }
+  .view-modal { background: #fff; border-radius: 12px; border: 1px solid #e0ddd6; padding: 1.5rem; width: 420px; max-width: 100%; max-height: 80vh; overflow-y: auto; }
+  .view-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .view-modal-header h3 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .post-card { border: 1px solid #e8e5de; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: #fafaf8; }
+  .post-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .post-card-title { font-size: 13px; font-weight: 600; color: #1a1a1a; flex: 1; }
+  .plat-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .plat-badge.ig { background: #dbeafe; color: #1d4ed8; }
+  .plat-badge.fb { background: #dcfce7; color: #15803d; }
+  .plat-badge.both { background: #fef3c7; color: #92400e; }
+  .status-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .status-badge.draft { background: #f0f0f0; color: #888; }
+  .status-badge.scheduled { background: #dbeafe; color: #1d4ed8; }
+  .status-badge.published { background: #dcfce7; color: #15803d; }
+  .post-card-notes { font-size: 12px; color: #888; line-height: 1.5; }
+  .post-card-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .post-card-actions button { font-size: 11px; padding: 3px 10px; cursor: pointer; border-radius: 6px; border: 1px solid #e0ddd6; background: #fff; color: #1a1a1a; font-family: inherit; }
+  .post-card-actions button:hover { background: #f5f4f0; }
+  .empty-day { font-size: 11px; color: #ccc; text-align: center; padding: 8px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="cal-header">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-name">River Ranch Resort</div>
+        <div class="brand-sub">Content Calendar</div>
+      </div>
+    </div>
+    <div class="nav">
+      <button id="prev-btn">&#8592;</button>
+      <div class="month-label" id="month-label"></div>
+      <button id="next-btn">&#8594;</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="filter-pill active-all" data-filter="all" id="f-all">All</div>
+    <div class="filter-pill" data-filter="ig" id="f-ig">Instagram</div>
+    <div class="filter-pill" data-filter="fb" id="f-fb">Facebook</div>
+    <div class="filter-pill" data-filter="both" id="f-both">Both</div>
+    <button class="add-btn" id="add-btn">+ Add post</button>
+  </div>
+
+  <div class="grid-header">
+    <div class="day-label">Sun</div>
+    <div class="day-label">Mon</div>
+    <div class="day-label">Tue</div>
+    <div class="day-label">Wed</div>
+    <div class="day-label">Thu</div>
+    <div class="day-label">Fri</div>
+    <div class="day-label">Sat</div>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+</div>
+
+<div id="modal-container"></div>
+
+<script>
+const STORAGE_KEY = 'rrr_cal_posts_v1';
+let posts = [];
+let currentYear, currentMonth;
+let activeFilter = 'all';
+let editingPost = null;
+
+function loadPosts() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) posts = JSON.parse(raw);
+  } catch(e) { posts = []; }
+}
+
+function savePosts() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(posts)); } catch(e) {}
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function init() {
+  loadPosts();
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth();
+  render();
+  document.getElementById('prev-btn').onclick = () => { currentMonth--; if(currentMonth<0){currentMonth=11;currentYear--;} render(); };
+  document.getElementById('next-btn').onclick = () => { currentMonth++; if(currentMonth>11){currentMonth=0;currentYear++;} render(); };
+  document.getElementById('add-btn').onclick = () => openAddModal(null);
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    p.onclick = () => {
+      activeFilter = p.dataset.filter;
+      document.querySelectorAll('.filter-pill').forEach(x => { x.className = 'filter-pill'; });
+      p.className = 'filter-pill active-' + activeFilter;
+      render();
+    };
+  });
+}
+
+function filteredPosts() {
+  if (activeFilter === 'all') return posts;
+  return posts.filter(p => p.platform === activeFilter);
+}
+
+function render() {
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('month-label').textContent = months[currentMonth] + ' ' + currentYear;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const first = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+  const today = new Date();
+  const fp = filteredPosts();
+  const totalCells = Math.ceil((first + daysInMonth) / 7) * 7;
+  for (let i = 0; i < totalCells; i++) {
+    const dayNum = i - first + 1;
+    const cell = document.createElement('div');
+    const isThisMonth = dayNum >= 1 && dayNum <= daysInMonth;
+    cell.className = 'cal-cell' + (isThisMonth ? '' : ' other-month');
+    if (isThisMonth && today.getFullYear()===currentYear && today.getMonth()===currentMonth && today.getDate()===dayNum) {
+      cell.className += ' today';
+    }
+    const dateStr = isThisMonth ? `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}` : null;
+    const numEl = document.createElement('div');
+    numEl.className = 'date-num';
+    numEl.textContent = isThisMonth ? dayNum : '';
+    cell.appendChild(numEl);
+    if (isThisMonth) {
+      const dayPosts = fp.filter(p => p.date === dateStr);
+      dayPosts.slice(0, 2).forEach(p => {
+        const chip = document.createElement('div');
+        chip.className = 'post-chip ' + p.platform;
+        chip.textContent = p.title;
+        chip.onclick = e => { e.stopPropagation(); openDayModal(dateStr); };
+        cell.appendChild(chip);
+      });
+      if (dayPosts.length > 2) {
+        const more = document.createElement('div');
+        more.className = 'more-chip';
+        more.textContent = '+' + (dayPosts.length - 2) + ' more';
+        cell.appendChild(more);
+      }
+      cell.onclick = () => {
+        const allDay = fp.filter(p => p.date === dateStr);
+        if (allDay.length > 0) openDayModal(dateStr);
+        else openAddModal(dateStr);
+      };
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function openAddModal(date) {
+  editingPost = null;
+  showFormModal(null, date);
+}
+
+function openEditModal(post) {
+  editingPost = post;
+  showFormModal(post, post.date);
+}
+
+function showFormModal(post, date) {
+  const mc = document.getElementById('modal-container');
+  mc.innerHTML = `
+    <div class="overlay" id="overlay">
+      <div class="modal">
+        <h3>${post ? 'Edit post' : 'Add post'}</h3>
+        <div class="field"><label>Title / video name</label><input type="text" id="f-title" value="${post ? post.title.replace(/"/g,'&quot;') : ''}" placeholder="e.g. Sunset kayak reel" /></div>
+        <div class="field"><label>Date</label><input type="date" id="f-date" value="${post ? post.date : (date || '')}" /></div>
+        <div class="field"><label>Platform</label>
+          <select id="f-platform">
+            <option value="ig" ${(!post||post.platform==='ig')?'selected':''}>Instagram</option>
+            <option value="fb" ${(post&&post.platform==='fb')?'selected':''}>Facebook</option>
+            <option value="both" ${(post&&post.platform==='both')?'selected':''}>Both</option>
+          </select>
+        </div>
+        <div class="field"><label>Status</label>
+          <select id="f-status">
+            <option value="draft" ${(!post||post.status==='draft')?'selected':''}>Draft</option>
+            <option value="scheduled" ${(post&&post.status==='scheduled')?'selected':''}>Scheduled</option>
+            <option value="published" ${(post&&post.status==='published')?'selected':''}>Published</option>
+          </select>
+        </div>
+        <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Caption ideas, shoot notes, links...">${post ? (post.notes||'') : ''}</textarea></div>
+        <div class="modal-actions">
+          ${post ? '<button class="delete-btn" id="del-btn">Delete</button>' : ''}
+          <button id="cancel-btn">Cancel</button>
+          <button class="save-btn" id="save-btn">Save</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('cancel-btn').onclick = closeModal;
+  document.getElementById('overlay').onclick = e => { if(e.target.id==='overlay') closeModal(); };
+  document.getElementById('save-btn').onclick = savePost;
+  if (post) document.getElementById('del-btn').onclick = () => deletePost(post.id);
+  setTimeout(() => { const t = document.getElementById('f-title'); if(t) t.focus(); }, 50);
+}
+
+function openDayModal(dateStr) {
+  const fp = filteredPosts().filter(p => p.date === dateStr);
+  const d = new Date(dateStr + 'T12:00:00');
+  const label = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  const mc = document.getElementById('modal-container');
+  mc.innerHTML = `
+    <div class="overlay" id="overlay">
+      <div class="view-modal">
+        <div class="view-modal-header">
+          <h3>${label}</h3>
+          <button id="cancel-btn">Close</button>
+        </div>
+        ${fp.length === 0 ? '<div class="empty-day">No posts for this day</div>' : fp.map(p => `
+          <div class="post-card">
+            <div class="post-card-header">
+              <div class="post-card-title">${p.title}</div>
+              <div class="plat-badge ${p.platform}">${p.platform==='ig'?'Instagram':p.platform==='fb'?'Facebook':'Both'}</div>
+              <div class="status-badge ${p.status}">${p.status}</div>
+            </div>
+            ${p.notes ? `<div class="post-card-notes">${p.notes}</div>` : ''}
+            <div class="post-card-actions">
+              <button data-id="${p.id}" class="edit-post-btn">Edit</button>
+            </div>
+          </div>`).join('')}
+        <button class="add-btn" style="width:100%;margin-top:8px;" id="add-from-day">+ Add post this day</button>
+      </div>
+    </div>`;
+  document.getElementById('cancel-btn').onclick = closeModal;
+  document.getElementById('overlay').onclick = e => { if(e.target.id==='overlay') closeModal(); };
+  document.getElementById('add-from-day').onclick = () => { closeModal(); openAddModal(dateStr); };
+  document.querySelectorAll('.edit-post-btn').forEach(btn => {
+    btn.onclick = () => {
+      const p = posts.find(x => x.id === btn.dataset.id);
+      closeModal();
+      if(p) openEditModal(p);
+    };
+  });
+}
+
+function savePost() {
+  const title = document.getElementById('f-title').value.trim();
+  const date = document.getElementById('f-date').value;
+  if (!title || !date) { alert('Please fill in a title and date.'); return; }
+  const platform = document.getElementById('f-platform').value;
+  const status = document.getElementById('f-status').value;
+  const notes = document.getElementById('f-notes').value.trim();
+  if (editingPost) {
+    const idx = posts.findIndex(p => p.id === editingPost.id);
+    if (idx > -1) posts[idx] = { ...posts[idx], title, date, platform, status, notes };
+  } else {
+    posts.push({ id: uid(), title, date, platform, status, notes });
+  }
+  savePosts();
+  closeModal();
+  render();
+}
+
+function deletePost(id) {
+  if (!confirm('Delete this post?')) return;
+  posts = posts.filter(p => p.id !== id);
+  savePosts();
+  closeModal();
+  render();
+}
+
+function closeModal() {
+  document.getElementById('modal-container').innerHTML = '';
+  editingPost = null;
+}
+
+init();
+</script>
+</body>
+</html>
